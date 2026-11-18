@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Osservatorio Grandi Investitori</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Monitor da sala operativa acceso 24 ore su 24: tutto in una schermata. A sinistra il portafoglio completo dell'investitore in primo piano (scorre da solo), a destra classifica 2026, consenso e operazioni; in alto il nastro. */
+  :root {
+    --ink-0: #0b1422;
+    --ink-1: #111d30;
+    --ink-2: #18263d;
+    --line: #243553;
+    --text: #e9eef6;
+    --muted: #93a2bb;
+    --accent: #e3b356;
+    --up: #43c58e;
+    --down: #ef6d5c;
+    --new: #b49cff;
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, Menlo, monospace;
+    --fs-xs: 12px; --fs-sm: 13.5px; --fs-md: 15px; --fs-lg: 19px; --fs-xl: 26px;
+    --gap: 14px; --pad: 16px; --r: 12px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ink-0); color: var(--text); font-family: var(--font-body); font-size: var(--fs-md); }
+  body { min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+  a { color: var(--accent); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  [hidden] { display: none !important; }
+  .muted { color: var(--muted); }
+  .up { color: var(--up); } .down { color: var(--down); } .nw { color: var(--new); }
+  body.idle, body.idle * { cursor: none !important; }
+
+  /* Testata */
+  .top { display: flex; align-items: center; gap: 10px 18px; padding: 10px 22px; background: var(--ink-1); border-bottom: 1px solid var(--line); flex-wrap: wrap; flex: none; }
+  .brand { margin-right: auto; min-width: 0; }
+  .brand h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-xl); line-height: 1.1; white-space: nowrap; }
+  .brand h1 span { color: var(--accent); }
+  .brand p { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--muted); }
+  .brand p b { color: var(--text); font-family: var(--font-mono); font-weight: 600; }
+  .tabs { display: flex; gap: 3px; background: var(--ink-0); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .tabs a { text-decoration: none; color: var(--muted); padding: 6px 12px; border-radius: 999px; font-size: var(--fs-sm); white-space: nowrap; }
+  .tabs a[aria-current="page"] { background: var(--ink-2); color: var(--text); }
+  .btn { background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: var(--fs-sm); white-space: nowrap; display: inline-block; text-decoration: none; color: var(--text); }
+  .btn:hover { border-color: var(--accent); }
+  .clock { font-family: var(--font-mono); font-size: var(--fs-lg); white-space: nowrap; text-align: right; line-height: 1.1; }
+  .clock small { display: block; font-size: var(--fs-xs); color: var(--muted); }
+
+  /* Nastro */
+  .tape { overflow: hidden; height: 36px; flex: none; border-bottom: 1px solid var(--line); }
+  .tape-track { display: flex; width: max-content; height: 100%; align-items: center; white-space: nowrap; }
+  .ti { display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; font-size: var(--fs-sm); border-right: 1px solid var(--line); }
+  .ti > span { white-space: nowrap; }
+  .ti .who { color: var(--muted); }
+  .ti .tk { font-family: var(--font-mono); font-weight: 600; }
+  .ti .dep { color: var(--accent); font-weight: 600; }
+  .ti .rtl { color: var(--new); font-weight: 600; }
+  @media (prefers-reduced-motion: no-preference) { .tape-track.run { animation: scroll var(--dur, 200s) linear infinite; } }
+  @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .tape { overflow-x: auto; } }
+
+  /* Fascia novità */
+  .alert { flex: none; display: flex; align-items: center; gap: 12px; padding: 0 22px; height: 40px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgba(180,156,255,.18), rgba(180,156,255,.03) 70%); overflow: hidden; }
+  .alert .lab { flex: none; font-weight: 600; font-size: var(--fs-xs); letter-spacing: .6px; text-transform: uppercase; color: #1b1240; background: var(--new); padding: 3px 11px; border-radius: 999px; }
+  @media (prefers-reduced-motion: no-preference) { .alert.hot .lab { animation: pulse 1.8s ease-in-out infinite; } }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(180,156,255,.7); } 50% { box-shadow: 0 0 0 7px rgba(180,156,255,0); } }
+  .alert .msg { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-sm); cursor: pointer; transition: opacity .35s; color: var(--muted); }
+  .alert .msg b { color: var(--text); font-weight: 600; }
+  .alert .msg .when { color: var(--new); font-family: var(--font-mono); font-weight: 600; margin-right: 10px; }
+  .alert .msg .up { color: var(--up); } .alert .msg .down { color: var(--down); }
+  .alert .cnt { flex: none; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); }
+
+  /* Schermo */
+  main { flex: 1; min-height: 0; }
+  .screen { display: grid; grid-template-columns: minmax(0, 2.05fr) minmax(300px, 1fr); gap: var(--gap); padding: var(--gap) 22px; }
+  .panel { background: var(--ink-1); border: 1px solid var(--line); border-radius: var(--r); padding: var(--pad); min-width: 0; display: flex; flex-direction: column; }
+  .panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex: none; }
+  .panel-h h2 { font-size: var(--fs-sm); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
+  .panel-h .hint { font-size: var(--fs-xs); color: var(--muted); }
+  .fit { flex: 1; min-height: 0; overflow: hidden; }
+
+  .spot-head { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: flex-end; justify-content: space-between; flex: none; }
+  .eyebrow { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .spot-name { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-xl); line-height: 1.1; }
+  .spot-fund { color: var(--muted); font-size: var(--fs-sm); margin-top: 2px; }
+  .spot-fund b { color: var(--text); font-weight: 500; }
+  .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .controls select { background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: var(--fs-sm); max-width: 290px; }
+  .progress { height: 3px; background: var(--ink-2); border-radius: 2px; overflow: hidden; margin: 8px 0; flex: none; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
+  .stat { background: var(--ink-2); border-radius: 9px; padding: 6px 12px; min-width: 96px; }
+  .stat .k { font-size: var(--fs-xs); color: var(--muted); }
+  .stat .v { font-family: var(--font-mono); font-weight: 600; font-size: var(--fs-md); white-space: nowrap; }
+  .stat.hi { outline: 1px solid rgba(227,179,86,.5); }
+  .stat.spark-box { flex: 1 1 200px; min-width: 180px; padding: 5px 10px 3px; }
+  .spark { height: 36px; }
+  .spark svg { display: block; width: 100%; height: 100%; }
+  .spark text { fill: var(--muted); font-size: 10.5px; font-family: var(--font-mono); }
+  .note { font-size: var(--fs-xs); color: var(--muted); border-left: 3px solid var(--accent); padding: 2px 10px; margin-top: 8px; flex: none; }
+  .note:empty { display: none; }
+  .new-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 10px; margin-top: 8px; border: 1px solid rgba(180,156,255,.6); background: rgba(180,156,255,.09); border-radius: 10px; flex: none; max-height: 76px; overflow: hidden; }
+  .new-strip:empty { display: none; }
+  .new-strip .lab { font-weight: 600; color: var(--new); margin-right: 2px; font-size: var(--fs-sm); }
+  .new-strip a { display: inline-flex; gap: 6px; align-items: baseline; padding: 2px 9px; border-radius: 999px; background: var(--new); color: #1b1240; text-decoration: none; font-weight: 600; font-size: var(--fs-xs); }
+  .new-strip a small { font-weight: 500; font-family: var(--font-mono); }
+  .new-strip .more { font-size: var(--fs-xs); color: var(--new); }
+
+  .pos-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 10px; flex: none; }
+  .pos-title h2 { font-size: var(--fs-md); font-weight: 600; }
+  .pos-title h2 span { color: var(--muted); font-weight: 400; font-size: var(--fs-sm); }
+  .legend { display: flex; gap: 6px; flex-wrap: wrap; }
+  .grid-row { display: grid; grid-template-columns: 82px minmax(0, 1fr) minmax(70px, 150px) 74px 170px 108px; align-items: center; gap: 10px; }
+  .pos-head { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: .4px; padding: 6px 8px; border-bottom: 1px solid var(--line); flex: none; }
+  .pos-head .r { text-align: right; }
+  .pos-list { display: flex; flex-direction: column; }
+  .pos { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  .pos:nth-child(even) { background: rgba(255,255,255,.028); }
+  .pos a.tk { font-family: var(--font-mono); font-weight: 600; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+  .pos a.tk::after { content: " ↗"; font-size: .75em; color: var(--muted); }
+  .pos .nm { min-width: 0; }
+  .pos .nm a { color: inherit; text-decoration: none; display: block; }
+  .pos .nm a:hover b, .pos a.tk:hover { text-decoration: underline; }
+  .pos .nm b { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pos .nm small { display: block; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pos .wb { height: 9px; background: var(--ink-2); border-radius: 5px; overflow: hidden; }
+  .pos .wb i { display: block; height: 100%; background: linear-gradient(90deg, rgba(227,179,86,.55), #e3b356); border-radius: 5px; }
+  .pos .pc { font-family: var(--font-mono); font-weight: 600; text-align: right; white-space: nowrap; }
+  .pos .vl { font-family: var(--font-mono); text-align: right; white-space: nowrap; font-size: var(--fs-sm); }
+  .pos .sh, .pos-head .c-sh { display: none; }
+  .pos.is-new { background: rgba(180,156,255,.14) !important; box-shadow: inset 5px 0 0 var(--new); }
+  .pos.is-new .nm b { color: #fff; font-weight: 600; }
+  @media (prefers-reduced-motion: no-preference) { .pos.is-new { animation: glow 2.4s ease-in-out infinite; } }
+  @keyframes glow { 0%, 100% { background: rgba(180,156,255,.10); } 50% { background: rgba(180,156,255,.24); } }
+  .pill { display: inline-flex; align-items: center; font-size: var(--fs-xs); padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; font-family: var(--font-mono); }
+  .pill.up { color: var(--up); border-color: rgba(67,197,142,.55); background: rgba(67,197,142,.09); }
+  .pill.down { color: var(--down); border-color: rgba(239,109,92,.55); background: rgba(239,109,92,.09); }
+  .pill.new { background: var(--new); color: #1b1240; border-color: var(--new); font-weight: 600; }
+  .pill.acc { color: var(--accent); border-color: rgba(227,179,86,.55); }
+  .exits { font-size: var(--fs-xs); color: var(--muted); padding-top: 6px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .exits:empty { display: none; }
+  .exits b { color: var(--down); }
+
+  /* Colonna destra */
+  .right { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+  .rrow { display: grid; grid-template-columns: 26px minmax(0, 1fr) 70px; gap: 8px; align-items: center; font-size: var(--fs-sm); padding: 4px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .rrow:last-child { border-bottom: 0; }
+  .rrow .n { font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+  .rrow .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rrow .who small { color: var(--muted); }
+  .rrow .v { font-family: var(--font-mono); font-weight: 600; text-align: right; }
+  .crow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: var(--fs-sm); padding: 3px 0; }
+  .crow a.tk { font-family: var(--font-mono); font-weight: 600; color: var(--text); text-decoration: none; }
+  .crow a.tk:hover { color: var(--accent); text-decoration: underline; }
+  .cbar { position: relative; height: 22px; background: var(--ink-2); border-radius: 5px; overflow: hidden; }
+  .cbar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, rgba(110,150,220,.45), rgba(130,170,240,.85)); border-radius: 5px; }
+  .cbar span { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 12px); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  .count { font-family: var(--font-mono); font-weight: 600; text-align: right; white-space: nowrap; }
+  .cbar.gold i { background: linear-gradient(90deg, rgba(227,179,86,.45), rgba(227,179,86,.9)); }
+  .cbar.disc i { background: linear-gradient(90deg, rgba(67,197,142,.35), rgba(67,197,142,.8)); }
+  .dots { display: inline-flex; gap: 5px; margin-left: 8px; vertical-align: middle; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); display: inline-block; }
+  .dots i.on { background: var(--accent); }
+  .bench { flex: none; border-top: 1px dashed rgba(227,179,86,.45); margin-top: 6px; padding-top: 6px; font-size: var(--fs-xs); color: var(--muted); display: flex; flex-wrap: wrap; gap: 3px 14px; }
+  .bench b { font-family: var(--font-mono); color: var(--text); font-weight: 600; }
+  .stat .vs { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+  a.cnt { color: inherit; text-decoration: none; } a.cnt:hover { color: var(--accent); text-decoration: underline; }
+  .act { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
+  .act > div { display: flex; flex-direction: column; min-height: 0; }
+  .act h3 { margin: 0 0 4px; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .5px; flex: none; }
+  .act ol { list-style: none; margin: 0; padding: 0; }
+  .act li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
+  .act li:last-child { border-bottom: 0; }
+  .act a.tk { font-family: var(--font-mono); font-weight: 600; color: var(--text); text-decoration: none; }
+  .act .co { color: var(--muted); font-size: var(--fs-xs); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+
+  /* Monitor orizzontale: tutto in una schermata, nessuno scorrimento */
+  @media (min-width: 1100px) and (orientation: landscape) {
+    :root {
+      --fs-xs: clamp(11px, 1.12vh, 16px); --fs-sm: clamp(12px, 1.32vh, 18px); --fs-md: clamp(13px, 1.55vh, 21px);
+      --fs-lg: clamp(16px, 2vh, 27px); --fs-xl: clamp(21px, 2.9vh, 40px); --gap: clamp(10px, 1.2vh, 18px); --pad: clamp(12px, 1.5vh, 22px);
+    }
+    html, body { height: 100%; }
+    body { overflow: hidden; }
+    body.list-view { overflow: auto; }
+    .screen { height: 100%; grid-template-rows: minmax(0, 1fr); }
+    .spot-panel { min-height: 0; overflow: hidden; }
+    .pos-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+    .pos-list::-webkit-scrollbar { display: none; }
+    .right { min-height: 0; }
+    .right .panel { flex: 1 1 0; min-height: 0; overflow: hidden; }
+    .alert { height: clamp(32px, 3.6vh, 50px); }
+    .right #p-act { flex-grow: 1.15; }
+  }
+  @media (min-width: 1700px) and (orientation: landscape) {
+    .grid-row { grid-template-columns: 96px minmax(0, 1fr) minmax(90px, 200px) 92px 200px 140px 128px; }
+    .pos .sh, .pos-head .c-sh { display: block; }
+    .pos .sh { font-family: var(--font-mono); text-align: right; color: var(--muted); white-space: nowrap; font-size: var(--fs-sm); }
+  }
+  @media (max-width: 1099px), (orientation: portrait) {
+    .screen { grid-template-columns: 1fr; padding: 12px; }
+    .clock, #b-full { display: none; }
+    .pos-head { display: none; }
+    .grid-row.pos { grid-template-columns: 70px minmax(0, 1fr) auto; grid-template-areas: "tk nm pc" "wb wb wb" "ac ac vl"; row-gap: 6px; column-gap: 10px; padding: 11px 6px; }
+    .pos .tk { grid-area: tk; } .pos .nm { grid-area: nm; } .pos .pc { grid-area: pc; font-size: var(--fs-lg); }
+    .pos .wb { grid-area: wb; } .pos .ac { grid-area: ac; } .pos .vl { grid-area: vl; }
+    .new-strip { max-height: none; }
+    .exits { white-space: normal; }
+    .act { grid-template-columns: 1fr; }
+  }
+
+  /* Viste secondarie */
+  .list { padding: 18px 22px 32px; max-width: 1500px; margin: 0 auto; width: 100%; }
+  .list h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-xl); }
+  .intro { color: var(--muted); max-width: 95ch; line-height: 1.5; margin: 8px 0 14px; font-size: var(--fs-sm); }
+  .intro b { color: var(--text); }
+  .recent { display: flex; gap: 10px; overflow-x: auto; padding: 12px 0 6px; }
+  .rcard { flex: 0 0 auto; min-width: 200px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: var(--fs-sm); cursor: pointer; }
+  .rcard:hover { border-color: var(--accent); }
+  .rcard .d { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--accent); }
+  .rcard .n { font-weight: 600; margin-top: 2px; }
+  .rcard .f { font-size: var(--fs-xs); color: var(--muted); }
+  .list-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+  .list-tools input { background: var(--ink-1); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; min-width: 240px; flex: 1; max-width: 420px; }
+  .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .seg button { background: var(--ink-1); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: var(--fs-sm); color: var(--muted); }
+  .seg button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); }
+  table { border-collapse: collapse; width: 100%; font-size: var(--fs-sm); }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .4px; padding: 10px 12px; background: var(--ink-1); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; }
+  td.num { font-family: var(--font-mono); white-space: nowrap; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: var(--ink-1); }
+  table.sortable th[data-k] { cursor: pointer; }
+  table.sortable th.on { color: var(--accent); }
+  td.pos-v { color: var(--up); } td.neg-v { color: var(--down); }
+  .medal { font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+  tr.bench-row td { background: rgba(227,179,86,.09); border-top: 1px dashed var(--accent); border-bottom: 1px dashed var(--accent); font-weight: 600; }
+  tr.bench-row td:first-child { color: var(--accent); }
+  .nd { color: var(--muted); font-size: var(--fs-xs); }
+  .list-foot { font-size: var(--fs-xs); color: var(--muted); margin-top: 14px; max-width: 95ch; line-height: 1.55; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 16px; }
+  .kpi { background: var(--ink-1); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 150px; }
+  .kpi .k { font-size: var(--fs-xs); color: var(--muted); }
+  .kpi .v { font-family: var(--font-mono); font-weight: 600; font-size: var(--fs-lg); }
+  .tk-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; margin: 6px 0 12px; }
+  .tk-head .big { font-family: var(--font-mono); font-size: var(--fs-xl); color: var(--accent); font-weight: 600; }
+  .sub2 { font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 18px 0 8px; }
+  .rt { margin-bottom: 26px; }
+  .err { padding: 40px 24px; color: var(--down); }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Osservatorio <span>Grandi Investitori</span></h1>
+      <p id="sub">Portafogli dichiarati alla SEC (modulo 13F)</p>
+    </div>
+    <nav class="tabs" aria-label="Viste">
+      <a href="#schermo" id="tab-schermo" aria-current="page">Schermo</a>
+      <a href="#classifica" id="tab-classifica">Classifica</a>
+      <a href="#idee" id="tab-idee">Idee</a>
+      <a href="#titoli" id="tab-titoli">Titoli</a>
+      <a href="#elenco" id="tab-elenco">Elenco completo</a>
+    </nav>
+    <button class="btn" id="b-full" type="button">Schermo intero</button>
+    <div class="clock" id="clock">--:--<small>ora italiana</small></div>
+  </header>
+
+  <div class="tape" aria-label="Ultime operazioni, comunicazioni e depositi"><div class="tape-track" id="tape-track"></div></div>
+  <div class="alert" id="alert" hidden><span class="lab" id="alert-lab">Novità</span><div class="msg" id="alert-msg" aria-live="polite"></div><span class="cnt" id="alert-cnt"></span></div>
+
+  <main>
+    <section class="screen" id="view-schermo">
+      <div class="panel spot-panel">
+        <div class="spot-head">
+          <div>
+            <div class="eyebrow">In primo piano</div>
+            <div class="spot-name" id="s-name">Caricamento…</div>
+            <div class="spot-fund" id="s-fund"></div>
+          </div>
+          <div class="controls">
+            <button class="btn" id="b-prev" type="button" aria-label="Investitore precedente">◀</button>
+            <button class="btn" id="b-play" type="button" aria-pressed="true">Pausa</button>
+            <button class="btn" id="b-next" type="button" aria-label="Investitore successivo">▶</button>
+            <select id="s-select" aria-label="Scegli l'investitore"></select>
+          </div>
+        </div>
+        <div class="progress" aria-hidden="true"><i id="s-prog"></i></div>
+        <div class="stats" id="s-stats"></div>
+        <div class="note" id="s-note"></div>
+        <div class="new-strip" id="s-new"></div>
+        <div class="pos-title">
+          <h2 id="s-pos-h">Tutte le posizioni</h2>
+          <span class="legend"><span class="pill new">★ nuova</span><span class="pill up">acquisto</span><span class="pill down">vendita</span><span class="pill">tocca il titolo per analizzarlo ↗</span></span>
+        </div>
+        <div class="grid-row pos-head" aria-hidden="true"><span>Titolo</span><span>Società</span><span>Peso</span><span class="r">%</span><span>Attività nel trimestre</span><span class="r c-sh">Azioni</span><span class="r">Valore</span></div>
+        <div class="pos-list" id="s-pos" tabindex="0" aria-label="Tutte le posizioni dell'investitore"></div>
+        <div class="exits" id="s-exits"></div>
+      </div>
+
+      <div class="right">
+        <div class="panel" id="p-rank">
+          <div class="panel-h"><h2 id="rank-mini-h">Classifica dell'anno</h2><a class="hint" href="#classifica">rendimento da inizio anno · tutta la classifica</a></div>
+          <div class="fit" id="rank-mini"></div>
+          <div class="bench" id="bench-mini"></div>
+        </div>
+        <div class="panel" id="p-cons">
+          <div class="panel-h"><h2><span id="cons-h">Titoli più condivisi</span><span class="dots" id="cons-dots" aria-hidden="true"></span></h2><span class="hint" id="cons-hint">gestori che lo possiedono</span></div>
+          <div class="fit" id="consensus"></div>
+        </div>
+        <div class="panel" id="p-act">
+          <div class="panel-h"><h2>Ultimo trimestre</h2><span class="hint">quanti gestori comprano / vendono</span></div>
+          <div class="act">
+            <div><h3 class="up">Più acquistati</h3><ol class="fit" id="buys"></ol></div>
+            <div><h3 class="down">Più venduti</h3><ol class="fit" id="sells"></ol></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="list" id="view-classifica" hidden>
+      <h2>Classifica dei gestori</h2>
+      <p class="intro" id="rank-intro"></p>
+      <div class="kpis" id="rank-kpis"></div>
+      <div class="tbl-wrap">
+        <table class="sortable">
+          <thead><tr><th>#</th><th data-k="nome">Gestore</th><th data-k="r26" class="num" id="th-r26">Da inizio anno</th><th data-k="rq" class="num" id="th-rq">Ultimo trimestre</th><th data-k="r4" class="num" id="th-r4">Trimestre in corso</th><th data-k="rs" class="num">Storico annuo</th><th data-k="val" class="num">Valore 13F</th><th data-k="nt" class="num">Titoli</th></tr></thead>
+          <tbody id="rank-body"></tbody>
+        </table>
+      </div>
+      <p class="list-foot">Calcolo sulle posizioni di Dataroma (moduli 13F della SEC) e sui prezzi di chiusura di Yahoo Finanza, aggiornati ogni mattina. Il rendimento del portafoglio 13F non coincide con quello del fondo: esclude posizioni short, titoli esteri, obbligazioni, liquidità, commissioni e le operazioni fatte dentro il trimestre. Non è una raccomandazione di investimento.</p>
+    </section>
+
+    <section class="list" id="view-idee" hidden>
+      <h2>Idee dai grandi investitori</h2>
+      <p class="intro"><b>Idee più forti</b>: titoli che pesano almeno il 10% nel portafoglio di un gestore, cioè le scommesse su cui punta di più. <b>Sotto il prezzo del 13F</b>: titoli comprati o aumentati nell'ultimo trimestre che oggi costano almeno il 5% in meno del prezzo con cui il gestore li ha dichiarati a fine trimestre. Il prezzo medio di carico del gestore non è pubblico: il confronto è con il prezzo di fine trimestre. Tocca il ticker per analizzare il titolo, il gestore per vederne il portafoglio.</p>
+      <div class="sub2">Le idee più forti · peso di almeno il 10%</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Titolo</th><th>Società</th><th class="num">Gestori</th><th>Chi e con che peso</th><th class="num">Dal 13F</th></tr></thead><tbody id="forti-body"></tbody></table></div>
+      <div class="sub2">Comprati nell'ultimo trimestre, oggi sotto il prezzo del 13F</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Titolo</th><th>Società</th><th class="num">Compratori</th><th>Chi ha comprato</th><th class="num">Prezzo 13F</th><th class="num">Prezzo oggi</th><th class="num">Differenza</th></tr></thead><tbody id="sconto-body"></tbody></table></div>
+      <p class="list-foot">Spunti di analisi, non raccomandazioni di investimento. I 13F mostrano solo le posizioni lunghe in azioni USA e arrivano fino a 45 giorni dopo la fine del trimestre.</p>
+    </section>
+
+    <section class="list" id="view-titoli" hidden>
+      <h2>Chi possiede un titolo</h2>
+      <div class="list-tools">
+        <input id="tk-q" list="tk-list" type="search" placeholder="Scrivi il ticker o il nome (es. AAPL, Alphabet)" aria-label="Cerca un titolo">
+        <datalist id="tk-list"></datalist>
+        <button class="btn" id="tk-go" type="button">Cerca</button>
+      </div>
+      <div id="tk-out"><p class="muted">Scrivi un titolo, oppure tocca un numero nei "Titoli più condivisi".</p></div>
+    </section>
+
+    <section class="list" id="view-elenco" hidden>
+      <div class="rt" id="rt-box" hidden>
+        <h2>Comunicazioni recenti alla SEC</h2>
+        <p class="intro">Acquisti e vendite comunicati dai gestori pochi giorni dopo l'operazione (Form 4, 13D, 13G), molto prima del 13F. Fonte: Dataroma RealTime.</p>
+        <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Gestore</th><th>Società</th><th>Tipo</th><th>Dettaglio</th></tr></thead><tbody id="rt-body"></tbody></table></div>
+      </div>
+      <h2>Tutti i superinvestitori di Dataroma</h2>
+      <div class="recent" id="recent" aria-label="Ultimi 13F depositati"></div>
+      <div class="list-tools">
+        <input id="q" type="search" placeholder="Cerca investitore o fondo" aria-label="Cerca investitore o fondo">
+        <div class="seg" role="group" aria-label="Filtra">
+          <button type="button" data-f="tutti" aria-pressed="true">Tutti</button>
+          <button type="button" data-f="q3" aria-pressed="false" id="f-last">13F più recenti</button>
+        </div>
+        <span class="muted" id="list-count"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Investitore</th><th>Fondo</th><th>Ultimo 13F</th><th>Aggiornato</th><th class="num">Valore</th><th class="num">Titoli</th><th class="num" id="th-l26">Anno</th><th>Fonte</th></tr></thead>
+          <tbody id="list-body"></tbody>
+        </table>
+      </div>
+      <p class="list-foot">Il 13F è una fotografia a fine trimestre delle sole posizioni lunghe in azioni USA, depositata fino a 45 giorni dopo. Tocca un gestore per vederlo in primo piano. Non è una raccomandazione di investimento.</p>
+    </section>
+  </main>
+
+<script>
+(function () {
+  'use strict';
+  const REFRESH_MS = 30 * 60 * 1000;
+  const KIOSK = window.matchMedia('(min-width: 1100px) and (orientation: landscape)');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const it0 = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
+  const it1 = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const it2 = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const usd = (v) => { if (v == null || isNaN(+v)) return '—'; v = +v; if (Math.abs(v) >= 1e9) return it1.format(v / 1e9) + ' mld $'; if (Math.abs(v) >= 1e6) return it1.format(v / 1e6) + ' mln $'; return it0.format(v) + ' $'; };
+  const pct = (v) => (v == null || isNaN(+v) ? '—' : it2.format(+v) + '%');
+  const sgn = (v) => (v == null || isNaN(+v) ? '' : (+v > 0 ? '+' : '−') + it1.format(Math.abs(+v)) + '%');
+  const date = (s) => { if (!s) return '—'; const d = new Date(s + 'T00:00:00Z'); return isNaN(d) ? s : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); };
+  const qv = (q) => { const m = /Q(\d) (\d{4})/.exec(String(q || '')); return m ? +m[2] * 10 + +m[1] : 0; };
+  const LAB = { nuova: 'Nuova', aumento: 'Aumento', riduzione: 'Riduzione', uscita: 'Uscita', invariata: 'Invariata', quotazione: 'Quotazione' };
+  const KIND = { nuova: 'up', aumento: 'up', riduzione: 'down', uscita: 'down' };
+  const UNI = { GOOG: 'GOOGL', 'LEN.B': 'LEN', 'BRK.A': 'BRK.B', 'LLYVK': 'LLYVA', 'FOX': 'FOXA', 'NWS': 'NWSA', 'LBTYK': 'LBTYA', 'LBTYB': 'LBTYA' };
+  const UNI_NAME = { GOOGL: 'Alphabet', LEN: 'Lennar', 'BRK.B': 'Berkshire Hathaway' };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const yUrl = (tk) => 'https://it.finance.yahoo.com/quote/' + encodeURIComponent(String(tk).replace(/\s*conv\.?$/i, '').trim().toUpperCase().replace(/\.([A-Z])$/, '-$1'));
+  const tkLink = (tk, cls, label) => { const a = el('a', cls || 'tk', label || tk); a.href = yUrl(tk); a.target = '_blank'; a.rel = 'noopener'; a.title = 'Analizza ' + tk + ' su Yahoo Finanza'; return a; };
+  const pill = (r) => {
+    const a = r.attivita;
+    if (!a) return el('span', 'pill', 'n.d.');
+    if (a === 'nuova') return el('span', 'pill new', '★ NUOVA POSIZIONE');
+    let t = LAB[a] || a;
+    if (r.variazione_pct != null && a !== 'uscita') t += ' ' + (r.stima ? '≈' : '') + sgn(r.variazione_pct);
+    return el('span', 'pill ' + (KIND[a] || ''), t);
+  };
+  const strength = (o) => Math.abs(+o.variazione_pct || (o.attivita === 'nuova' ? 999 : 0));
+  const fmtR = (v) => (v == null ? null : (v > 0 ? '+' : v < 0 ? '−' : '') + it1.format(Math.abs(v)) + '%');
+  // Riempie un contenitore con quante righe ci stanno (sul monitor) o con un numero fisso (sul telefono)
+  const fill = (box, items, make, max) => {
+    box.replaceChildren();
+    const fit = KIOSK.matches && box.clientHeight > 0;
+    for (const it of items.slice(0, fit ? 60 : max)) {
+      const n = make(it); box.append(n);
+      if (fit && box.scrollHeight > box.clientHeight + 1) { n.remove(); break; }
+    }
+  };
+
+  // Orologio
+  const clock = document.getElementById('clock');
+  const tick = () => { const n = new Date(); clock.replaceChildren(document.createTextNode(n.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })), el('small', null, n.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Rome' }) + ' · ora italiana')); };
+  tick(); setInterval(tick, 15000);
+
+  // Schermo intero e cursore nascosto
+  const bFull = document.getElementById('b-full');
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+  bFull.onclick = () => { const d = document.documentElement; try { if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else { const r = (d.requestFullscreen || d.webkitRequestFullscreen).call(d); if (r && r.catch) r.catch(() => { bFull.textContent = 'Premi F11'; }); } } catch (e) { bFull.textContent = 'Premi F11'; } };
+  document.addEventListener('fullscreenchange', () => { bFull.textContent = fsEl() ? 'Esci da schermo intero' : 'Schermo intero'; });
+  let idleT;
+  const wake = () => { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add('idle'), 4000); };
+  ['mousemove', 'mousedown', 'keydown', 'touchstart'].forEach((ev) => document.addEventListener(ev, wake, { passive: true }));
+  wake();
+
+  // Il file per il monitor contiene una copia dei dati e scarica quelli nuovi da GitHub; la pagina pubblicata li legge accanto a sé
+  const REMOTE = 'https://raw.githubusercontent.com/luigidav88/osservatorio/main/data/dati.json';
+  const SRC = window.__DATI ? REMOTE : 'data/dati.json';
+  const vkey = (d) => (d && d.aggiornato ? d.aggiornato + '|' + (d.prezzi_al || '') : '');
+  const getJSON = (u, ms) => {
+    const c = window.AbortController ? new AbortController() : null; const t = c ? setTimeout(() => c.abort(), ms || 30000) : 0;
+    return fetch(u + '?t=' + Date.now(), { cache: 'no-store', signal: c ? c.signal : undefined }).then((r) => { clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json(); });
+  };
+  let offline = false;
+  const load = window.__DATI
+    ? getJSON(SRC, 25000).then((d) => (d && d.investitori && vkey(d) >= vkey(window.__DATI) ? d : window.__DATI)).catch(() => { offline = true; return window.__DATI; })
+    : getJSON(SRC, 60000);
+  load.then(init).catch(() => { document.querySelector('main').replaceChildren(el('div', 'err', 'Non riesco a caricare i dati. Ricarica la pagina.')); });
+
+  function init(D) {
+    const INV = new Map(D.investitori.map((i) => [i.id, i]));
+    const DR = D.dataroma.concat(D.extra || []);
+    const drById = new Map(DR.filter((d) => d.dettaglio).map((d) => [d.dettaglio, d]));
+    const nameOf = (id) => (INV.get(id) || {}).investitore || id;
+    const latest = new Map(D.investitori.map((i) => [i.id, i.trimestre]));
+    const posBy = new Map(); for (const p of D.posizioni) { if (!posBy.has(p.investitore_id)) posBy.set(p.investitore_id, []); posBy.get(p.investitore_id).push(p); }
+    const opsBy = new Map(); for (const o of D.operazioni) { if (!opsBy.has(o.investitore_id)) opsBy.set(o.investitore_id, []); opsBy.get(o.investitore_id).push(o); }
+    const perfBy = new Map((D.performance || []).map((p) => [p.chiave, p]));
+    const perfOf = (d) => perfBy.get(d.codice || ('extra:' + d.dettaglio)) || {};
+    const ytdOf = (p) => (p.rendimento_anno ?? p.rendimento_2026 ?? null);
+    const RM = D.rend_meta || { anno: 2026, ultimo_trim: 'Q3 2026', corrente: 'Q4 2026', dal: '2026-09-30' };
+    const LQ = D.dataroma.reduce((m, d) => (qv(d.trimestre) > qv(m) ? d.trimestre : m), '');
+    const dal = RM.dal ? new Date(RM.dal + 'T00:00:00Z').toLocaleDateString('it-IT', { day: 'numeric', month: 'numeric', timeZone: 'UTC' }) : '';
+    document.getElementById('rank-mini-h').textContent = 'Classifica ' + RM.anno;
+    document.getElementById('th-r26').textContent = 'Rendimento ' + RM.anno;
+    document.getElementById('th-rq').textContent = RM.ultimo_trim || 'Ultimo trimestre';
+    document.getElementById('th-r4').textContent = RM.corrente ? 'Dal ' + dal : '—';
+    document.getElementById('th-l26').textContent = String(RM.anno);
+    document.getElementById('f-last').textContent = '13F del ' + LQ;
+    const intro = document.getElementById('rank-intro');
+    intro.replaceChildren(el('b', null, 'Rendimento ' + RM.anno), document.createTextNode(": da inizio anno a oggi del portafoglio dichiarato nel 13F, trimestre per trimestre (le posizioni di fine trimestre valorizzate ai prezzi del trimestre successivo; prezzi senza dividendi). "));
+    if (RM.ultimo_trim) intro.append(el('b', null, RM.ultimo_trim), document.createTextNode(': rendimento in quel trimestre. '));
+    if (RM.corrente) intro.append(el('b', null, 'Dal ' + dal), document.createTextNode(": andamento del portafoglio dopo l'ultima fine trimestre. "));
+    intro.append(el('b', null, 'Storico annuo'), document.createTextNode(": rendimento medio annuo copiando il 13F, sugli anni indicati (fonte Arkolith). Tocca l'intestazione di una colonna per ordinare, una riga per vedere il portafoglio."));
+
+    const nQ3 = D.dataroma.filter((d) => d.trimestre === LQ).length;
+    document.getElementById('sub').replaceChildren(document.createTextNode('13F alla SEC · '), el('b', null, String(D.dataroma.length)), document.createTextNode(' gestori di Dataroma, '), el('b', null, String(nQ3)), document.createTextNode(' con il ' + LQ + ' · prezzi al ' + date(D.prezzi_al || D.aggiornato) + (offline ? ' · senza connessione: ultimi dati salvati' : ' · aggiornato ogni mattina')));
+
+    // Consenso e attività
+    const cons = new Map();
+    for (const p of D.posizioni) { if (p.attivita === 'uscita') continue; const t = UNI[p.ticker] || p.ticker; if (!cons.has(t)) cons.set(t, { tk: t, co: UNI_NAME[t] || p.societa, inv: new Set() }); cons.get(t).inv.add(p.investitore_id); }
+    const consList = [...cons.values()].map((c) => ({ ...c, n: c.inv.size })).sort((a, b) => b.n - a.n || a.tk.localeCompare(b.tk));
+    const acts = new Map();
+    for (const o of D.operazioni) { if (latest.get(o.investitore_id) !== o.trimestre) continue; const t = UNI[o.ticker] || o.ticker; if (!acts.has(t)) acts.set(t, { tk: t, co: UNI_NAME[t] || o.societa, buy: new Set(), sell: new Set() }); const g = acts.get(t); if (o.attivita === 'nuova' || o.attivita === 'aumento') g.buy.add(o.investitore_id); if (o.attivita === 'riduzione' || o.attivita === 'uscita') g.sell.add(o.investitore_id); }
+    const A = [...acts.values()];
+    const todayISO = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
+    const daysAgo = (iso) => Math.round((Date.parse(todayISO + 'T00:00:00Z') - Date.parse(String(iso).slice(0, 10) + 'T00:00:00Z')) / 864e5);
+    const fresh = (i) => i.depositato && daysAgo(i.depositato) <= 3;
+    const order = D.investitori.slice().sort((a, b) => (fresh(b) - fresh(a)) || (fresh(a) && fresh(b) ? String(b.depositato).localeCompare(String(a.depositato)) : 0) || (+b.valore_usd || 0) - (+a.valore_usd || 0)).map((i) => i.id);
+    const BM = (D.benchmark || []).filter((b) => b.rendimento_anno != null);
+    const SP = BM.find((b) => b.ticker === '^GSPC');
+    const rankRows = DR.map((d) => { const p = perfOf(d); const i = d.dettaglio ? INV.get(d.dettaglio) : null; return { d, id: d.dettaglio, nome: d.investitore, fondo: d.fondo, r26: ytdOf(p), rq: p.rendimento_ultimo_trim ?? null, r4: p.rendimento_trimestri && RM.corrente ? p.rendimento_trimestri[RM.corrente] ?? null : null, rs: p.rendimento_storico_annuo ?? null, anni: p.anni, val: i ? +i.valore_usd || null : null, nt: i ? i.n_titoli : null }; });
+    const benchRows = BM.map((b) => ({ bench: true, nome: b.nome, fondo: b.nome === 'S&P 500' ? 'Indice delle 500 maggiori società USA' : 'Indice azionario mondiale (ETF iShares)', r26: b.rendimento_anno, rq: b.rendimento_ultimo_trim ?? null, r4: b.rendimento_trimestri && RM.corrente ? b.rendimento_trimestri[RM.corrente] ?? null : null, rs: null, val: null, nt: null }));
+    const withR = rankRows.filter((r) => r.r26 != null);
+    const beats = (b) => withR.filter((r) => r.r26 > b.rendimento_anno).length;
+
+    // Idee più forti (peso >= 10%) e titoli comprati oggi sotto il prezzo del 13F
+    const forti = new Map(), sconto = new Map();
+    for (const p of D.posizioni) {
+      if (p.attivita === 'uscita') continue;
+      const t = UNI[p.ticker] || p.ticker;
+      if (!forti.has(t)) forti.set(t, { tk: t, co: UNI_NAME[t] || p.societa, by: new Map(), v: p.var_da_dich });
+      const fg = forti.get(t); fg.by.set(p.investitore_id, (fg.by.get(p.investitore_id) || 0) + (+p.peso_pct || 0));
+      if (p.attivita === 'nuova' || p.attivita === 'aumento') {
+        if (!sconto.has(t)) sconto.set(t, { tk: t, co: UNI_NAME[t] || p.societa, rows: [], ref: null });
+        const g = sconto.get(t); g.rows.push(p);
+        if (p.var_da_dich != null && (!g.ref || (p.trimestre === LQ && g.ref.trimestre !== LQ))) g.ref = p;
+      }
+    }
+    // il peso somma le classi di azioni della stessa società (es. GOOG + GOOGL)
+    const fortiList = [...forti.values()].map((g) => ({ ...g, rows: [...g.by].filter(([, w]) => w >= 10).map(([id, w]) => ({ investitore_id: id, peso_pct: w })).sort((a, b) => b.peso_pct - a.peso_pct) })).filter((g) => g.rows.length).map((g) => ({ ...g, n: g.rows.length, max: g.rows[0].peso_pct })).sort((a, b) => b.n - a.n || b.max - a.max);
+    const scontoList = [...sconto.values()].filter((g) => g.ref && g.ref.var_da_dich <= -5).map((g) => ({ ...g, n: new Set(g.rows.map((p) => p.investitore_id)).size, v: g.ref.var_da_dich })).sort((a, b) => b.n - a.n || a.v - b.v);
+
+    function drawRight() {
+      const top = withR.slice().sort((a, b) => b.r26 - a.r26);
+      const bm = document.getElementById('bench-mini');
+      bm.replaceChildren(...BM.map((b) => { const x = el('span'); x.append(document.createTextNode(b.nome + ' '), el('b', b.rendimento_anno >= 0 ? 'up' : 'down', fmtR(b.rendimento_anno))); return x; }));
+      if (SP) bm.append(el('span', null, beats(SP) + ' gestori su ' + withR.length + " fanno meglio dell'S&P 500"));
+      bm.hidden = !BM.length;
+      fill(document.getElementById('rank-mini'), top, (r) => {
+        const row = el('div', 'rrow'); const w = el('div', 'who'); w.append(document.createTextNode(r.nome + ' '), el('small', null, r.fondo !== r.nome ? r.fondo : ''));
+        row.append(el('span', 'n', String(top.indexOf(r) + 1)), w, el('span', 'v ' + (r.r26 >= 0 ? 'up' : 'down'), fmtR(r.r26)));
+        if (r.id) row.onclick = () => show(order.indexOf(r.id), true);
+        return row;
+      }, 10);
+      drawMid();
+      const li = (key) => (g) => { const l = el('li'); const left = el('div'); left.append(tkLink(g.tk), el('span', 'co', g.co)); l.title = [...g[key]].map(nameOf).join(', '); l.append(left, el('span', 'count ' + (key === 'buy' ? 'up' : 'down'), String(g[key].size))); return l; };
+      fill(document.getElementById('buys'), A.filter((g) => g.buy.size).sort((a, b) => b.buy.size - a.buy.size || a.tk.localeCompare(b.tk)), li('buy'), 8);
+      fill(document.getElementById('sells'), A.filter((g) => g.sell.size).sort((a, b) => b.sell.size - a.sell.size || a.tk.localeCompare(b.tk)), li('sell'), 8);
+    }
+
+    // Pannello centrale: tre elenchi che si alternano ogni 20 secondi
+    const MODES = [
+      { h: 'Titoli più condivisi', hint: 'gestori che lo possiedono', draw: () => {
+        const maxN = consList.length ? consList[0].n : 1;
+        return [consList, (c) => {
+          const r = el('div', 'crow'); r.title = c.co + ': ' + [...c.inv].map(nameOf).join(', ');
+          const b = el('div', 'cbar'); const i = el('i'); i.style.width = (c.n / maxN) * 100 + '%'; b.append(i, el('span', null, c.co));
+          const cn = el('a', 'count cnt', String(c.n)); cn.href = '#titoli'; cn.title = 'Chi possiede ' + c.tk; cn.onclick = () => { window.__tk = c.tk; };
+          r.append(tkLink(c.tk), b, cn); return r;
+        }];
+      } },
+      { h: 'Idee più forti', hint: 'peso ≥ 10% · quanti gestori', draw: () => {
+        const mx = Math.max(...fortiList.map((g) => g.max), 1);
+        return [fortiList, (g) => {
+          const r = el('div', 'crow'); r.title = g.rows.map((p) => nameOf(p.investitore_id) + ' ' + pct(p.peso_pct)).join(', ');
+          const b = el('div', 'cbar gold'); const i = el('i'); i.style.width = (g.max / mx) * 100 + '%';
+          b.append(i, el('span', null, g.co + ' · ' + nameOf(g.rows[0].investitore_id) + ' ' + it1.format(g.rows[0].peso_pct) + '%'));
+          const cn = el('a', 'count cnt', String(g.n)); cn.href = '#idee'; cn.title = 'Tutte le idee più forti';
+          r.append(tkLink(g.tk), b, cn); return r;
+        }];
+      } },
+      { h: 'Sotto il prezzo del 13F', hint: 'comprati nel trimestre · oggi vs 13F', draw: () => {
+        return [scontoList, (g) => {
+          const r = el('div', 'crow'); r.title = 'Comprato da: ' + [...new Set(g.rows.map((p) => nameOf(p.investitore_id)))].join(', ');
+          const b = el('div', 'cbar disc'); const i = el('i'); i.style.width = Math.min(100, (Math.abs(g.v) / 40) * 100) + '%';
+          b.append(i, el('span', null, g.co + ' · ' + g.n + (g.n === 1 ? ' compratore' : ' compratori')));
+          const cn = el('a', 'count cnt down', sgn(g.v)); cn.href = '#idee'; cn.title = 'Prezzo di oggi rispetto al 13F';
+          r.append(tkLink(g.tk), b, cn); return r;
+        }];
+      } },
+    ].filter((m, k) => k === 0 || (k === 1 ? fortiList.length : scontoList.length));
+    let mode = 0, modeT = null;
+    function drawMid() {
+      const m = MODES[mode % MODES.length];
+      document.getElementById('cons-h').textContent = m.h;
+      document.getElementById('cons-hint').textContent = m.hint;
+      document.getElementById('cons-dots').replaceChildren(...MODES.map((x, k) => el('i', k === mode % MODES.length ? 'on' : '')));
+      const [list, make] = m.draw();
+      fill(document.getElementById('consensus'), list, make, 10);
+    }
+    function cycleMid() { clearInterval(modeT); if (MODES.length > 1) modeT = setInterval(() => { if (!document.getElementById('view-schermo').hidden) { mode = (mode + 1) % MODES.length; drawMid(); } }, 20000); }
+    cycleMid();
+
+    // Fascia novità: nuovi 13F e comunicazioni degli ultimi 7 giorni, una alla volta
+    const news = [];
+    for (const d of DR) if (d.aggiornato && daysAgo(d.aggiornato) <= 7 && daysAgo(d.aggiornato) >= 0) {
+      const i = d.dettaglio ? INV.get(d.dettaglio) : null;
+      news.push({ d: d.aggiornato, k: 0, id: d.dettaglio, make: () => { const f = document.createDocumentFragment(); f.append(el('b', null, d.investitore), document.createTextNode(' ha depositato il 13F del ' + d.trimestre)); if (i) { f.append(document.createTextNode(' · ')); f.append(el('span', 'up', i.nuove + (i.nuove === 1 ? ' nuova posizione' : ' nuove posizioni'))); f.append(document.createTextNode(', ' + i.aumentate + ' aumenti, ' + i.ridotte + ' riduzioni, ')); f.append(el('span', 'down', i.uscite + (i.uscite === 1 ? ' uscita' : ' uscite'))); } return f; } });
+    }
+    const RTn = (D.tempo_reale || []).filter((r) => daysAgo(r.data) <= 7 && daysAgo(r.data) >= 0);
+    for (const r of RTn) {
+      const id = (DR.find((d) => d.investitore === r.gestore) || {}).dettaglio;
+      news.push({ d: r.data, k: 1, id, make: () => { const f = document.createDocumentFragment(); f.append(el('b', null, r.gestore), document.createTextNode(' · ' + r.tipo + ' · ' + r.societa + ': '), el('span', r.attivita === 'Buy' ? 'up' : 'down', r.descrizione)); return f; } });
+    }
+    news.sort((a, b) => b.d.localeCompare(a.d) || a.k - b.k);
+    const alertBox = document.getElementById('alert'), alertMsg = document.getElementById('alert-msg'), alertCnt = document.getElementById('alert-cnt');
+    if (news.length) {
+      const N = news.slice(0, 20);
+      const hot = N.some((n) => daysAgo(n.d) <= 1);
+      alertBox.hidden = false; alertBox.classList.toggle('hot', hot);
+      document.getElementById('alert-lab').textContent = hot ? 'Novità di oggi' : 'Novità della settimana';
+      let ni = 0;
+      const when = (iso) => { const g = daysAgo(iso); return g <= 0 ? 'OGGI' : g === 1 ? 'IERI' : date(iso); };
+      const showNews = () => {
+        const n = N[ni % N.length];
+        alertMsg.style.opacity = 0;
+        setTimeout(() => { alertMsg.replaceChildren(el('span', 'when', when(n.d)), n.make()); alertMsg.onclick = n.id ? () => window.__show(n.id) : null; alertMsg.style.opacity = 1; }, reduce ? 0 : 300);
+        alertCnt.textContent = N.length > 1 ? (ni % N.length + 1) + '/' + N.length : '';
+        ni++;
+      };
+      showNews(); if (N.length > 1) setInterval(showNews, 8000);
+    }
+
+    // Nastro
+    const items = [];
+    const RT = (D.tempo_reale || []).slice().sort((a, b) => String(b.data).localeCompare(String(a.data)));
+    const rtSeen = new Set();
+    for (const r of RT.filter((x) => { const k = x.gestore + '|' + x.societa + '|' + x.attivita; if (rtSeen.has(k)) return false; rtSeen.add(k); return true; }).slice(0, 10)) { const s = el('span', 'ti'); s.append(el('span', 'rtl', 'ULTIME ORE · ' + r.tipo), el('span', null, r.gestore), el('span', 'tk', r.societa), el('span', r.attivita === 'Buy' ? 'up' : 'down', r.descrizione)); items.push(s); }
+    for (const id of order.slice(0, 35)) {
+      const i = INV.get(id); const ops = (opsBy.get(id) || []).filter((o) => o.trimestre === i.trimestre).sort((a, b) => strength(b) - strength(a)).slice(0, 2);
+      for (const o of ops) { const k = KIND[o.attivita]; const s = el('span', 'ti'); const isNew = o.attivita === 'nuova'; s.append(el('span', 'who', i.investitore), el('span', 'tk' + (isNew ? ' nw' : ''), (isNew ? '★ ' : '') + o.ticker), el('span', isNew ? 'nw' : k, isNew ? 'Nuova posizione' : (k === 'up' ? '▲ ' : '▼ ') + (o.attivita === 'uscita' ? 'Uscita' : o.variazione_pct != null ? sgn(o.variazione_pct) : LAB[o.attivita]))); items.push(s); }
+    }
+    const recent = DR.slice().sort((a, b) => b.aggiornato.localeCompare(a.aggiornato)).slice(0, 12);
+    for (const d of recent) { const s = el('span', 'ti'); s.append(el('span', 'dep', '13F ' + d.trimestre), el('span', null, d.investitore), el('span', 'who', date(d.aggiornato))); items.push(s); }
+    const track = document.getElementById('tape-track');
+    track.replaceChildren(...items, ...items.map((n) => n.cloneNode(true)));
+    track.style.setProperty('--dur', Math.max(90, items.length * 3.6) + 's');
+    track.classList.add('run');
+
+    // In primo piano
+    const sel = document.getElementById('s-select');
+    sel.replaceChildren(...order.map((id) => new Option(INV.get(id).investitore + ' – ' + INV.get(id).fondo, id)));
+    const prog = document.getElementById('s-prog'), bPlay = document.getElementById('b-play'), posBox = document.getElementById('s-pos');
+    let idx = 0, playing = true, timer = null, raf = null, dwell = 40000;
+    function autoScroll() {
+      cancelAnimationFrame(raf); posBox.scrollTop = 0;
+      if (!playing || reduce || !KIOSK.matches) return;
+      const dist = posBox.scrollHeight - posBox.clientHeight; if (dist <= 4) return;
+      const t0 = performance.now() + 5000, dur = dwell - 9000;
+      const step = (now) => { const k = Math.min(1, Math.max(0, (now - t0) / dur)); posBox.scrollTop = dist * k; if (k < 1 && playing) raf = requestAnimationFrame(step); };
+      raf = requestAnimationFrame(step);
+    }
+    function startTimer() {
+      clearTimeout(timer); prog.style.transition = 'none'; prog.style.width = '0';
+      const rowsH = posBox.scrollHeight - posBox.clientHeight;
+      dwell = Math.min(150000, Math.max(30000, 30000 + (rowsH > 0 ? rowsH * 25 : 0)));
+      autoScroll();
+      if (!playing) return;
+      if (!reduce) { void prog.offsetWidth; prog.style.transition = 'width ' + dwell + 'ms linear'; prog.style.width = '100%'; }
+      timer = setTimeout(() => show(idx + 1), dwell);
+    }
+    function show(i, pause) {
+      if (i < 0) i = order.length - 1;
+      idx = i % order.length;
+      if (pause) { playing = false; bPlay.textContent = 'Riprendi'; bPlay.setAttribute('aria-pressed', 'false'); }
+      if (location.hash && location.hash !== '#schermo') { location.hash = '#schermo'; return; }
+      render(order[idx]); sel.value = order[idx]; startTimer();
+    }
+    window.__show = (id) => { idx = Math.max(0, order.indexOf(id)); playing = false; bPlay.textContent = 'Riprendi'; location.hash = '#schermo'; };
+    document.getElementById('b-prev').onclick = () => show(idx - 1, true);
+    document.getElementById('b-next').onclick = () => show(idx + 1, true);
+    bPlay.onclick = () => { playing = !playing; bPlay.textContent = playing ? 'Pausa' : 'Riprendi'; bPlay.setAttribute('aria-pressed', String(playing)); startTimer(); };
+    sel.onchange = () => show(order.indexOf(sel.value), true);
+
+    function spark(box, id) {
+      const pts = D.storico_valore.filter((r) => r.investitore_id === id && r.valore_usd != null && r.data).sort((a, b) => a.data.localeCompare(b.data));
+      if (pts.length < 2) { box.replaceChildren(el('div', 'muted', 'Storico in costruzione')); return; }
+      const W = Math.max(160, box.clientWidth || 240), H = box.clientHeight || 36, pt = 12;
+      const ts = pts.map((p) => Date.parse(p.data + 'T00:00:00Z')), vs = pts.map((p) => +p.valore_usd);
+      const x0 = Math.min(...ts), x1 = Math.max(...ts), ymax = Math.max(...vs) * 1.05;
+      const X = (t) => 2 + ((t - x0) / (x1 - x0 || 1)) * (W - 4), Y = (v) => pt + (1 - v / ymax) * (H - pt - 2);
+      const NS = 'http://www.w3.org/2000/svg', mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+      const svg = mk('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Valore 13F da ' + pts[0].trimestre + ' a ' + pts[pts.length - 1].trimestre });
+      const line = pts.map((p, k) => (k ? 'L' : 'M') + X(ts[k]).toFixed(1) + ' ' + Y(vs[k]).toFixed(1)).join(' ');
+      svg.append(mk('path', { d: line + ' L' + X(ts[ts.length - 1]).toFixed(1) + ' ' + H + ' L' + X(ts[0]).toFixed(1) + ' ' + H + ' Z', fill: 'rgba(227,179,86,.18)' }), mk('path', { d: line, fill: 'none', stroke: '#e3b356', 'stroke-width': 2 }), mk('circle', { cx: X(ts[ts.length - 1]), cy: Y(vs[vs.length - 1]), r: 3, fill: '#e3b356' }));
+      const t = mk('text', { x: 2, y: 9 }); t.textContent = pts[0].trimestre + ' → ' + pts[pts.length - 1].trimestre; svg.append(t);
+      box.replaceChildren(svg);
+    }
+
+    function render(id) {
+      const i = INV.get(id); const dr = drById.get(id); const p26 = dr ? perfOf(dr) : {};
+      document.getElementById('s-name').textContent = i.investitore;
+      document.getElementById('s-fund').replaceChildren(el('b', null, i.fondo), document.createTextNode(i.stile ? ' · ' + i.stile : ''));
+      const st = [['13F', i.trimestre], ['Aggiornato', date(i.depositato)], ['Valore', usd(i.valore_usd)], ['Titoli', i.n_titoli == null ? '—' : it0.format(i.n_titoli)]];
+      const stats = st.map(([k, v]) => { const s = el('div', 'stat'); s.append(el('div', 'k', k), el('div', 'v', v)); return s; });
+      const y26 = ytdOf(p26); if (y26 != null) { const s = el('div', 'stat hi'); s.append(el('div', 'k', 'Rendimento ' + RM.anno), el('div', 'v ' + (y26 >= 0 ? 'up' : 'down'), fmtR(y26))); if (SP) { const dlt = y26 - SP.rendimento_anno; s.append(el('div', 'vs', (dlt >= 0 ? '+' : '−') + it1.format(Math.abs(dlt)) + ' punti vs S&P 500')); } stats.push(s); }
+      const sb = el('div', 'stat spark-box'); const sp = el('div', 'spark'); sb.append(el('div', 'k', 'Valore nel tempo'), sp); stats.push(sb);
+      document.getElementById('s-stats').replaceChildren(...stats); spark(sp, id);
+      let note = i.nota || '';
+      if (dr && qv(dr.trimestre) > qv(i.trimestre)) note = 'Su Dataroma è già disponibile il ' + dr.trimestre + ': arriverà con il prossimo aggiornamento. ' + note;
+      document.getElementById('s-note').textContent = note.trim();
+
+      const all = posBy.get(id) || [];
+      const pos = all.filter((p) => p.attivita !== 'uscita').sort((a, b) => (b.peso_pct ?? -1) - (a.peso_pct ?? -1));
+      const exits = all.filter((p) => p.attivita === 'uscita');
+      const ops = opsBy.get(id) || [];
+      const lq = ops.reduce((m, o) => (qv(o.trimestre) > qv(m) ? o.trimestre : m), '');
+      const news = ops.filter((o) => o.trimestre === lq && o.attivita === 'nuova');
+      const ns = document.getElementById('s-new');
+      if (news.length) {
+        const pw = new Map(pos.map((p) => [p.ticker, p.peso_pct]));
+        const shown = news.slice().sort((a, b) => (pw.get(b.ticker) ?? 0) - (pw.get(a.ticker) ?? 0)).slice(0, 8);
+        ns.replaceChildren(el('span', 'lab', '★ ' + (news.length === 1 ? 'Nuova azienda' : news.length + ' nuove aziende') + ' (' + lq + '):'), ...shown.map((o) => { const a = tkLink(o.ticker, '', o.ticker + ' · ' + o.societa); if (pw.get(o.ticker) != null) a.append(el('small', null, pct(pw.get(o.ticker)))); return a; }), ...(news.length > 8 ? [el('span', 'more', '+' + (news.length - 8) + ' altre, evidenziate in tabella')] : []));
+      } else ns.replaceChildren();
+      const h = document.getElementById('s-pos-h');
+      h.replaceChildren(document.createTextNode('Tutte le posizioni '), el('span', null, '· ' + pos.length + ' titoli · ' + (i.trimestre_posizioni || i.trimestre)));
+      const mx = Math.max(...pos.map((p) => +p.peso_pct || 0), 0) || 1;
+      posBox.replaceChildren(...pos.map((p) => {
+        const r = el('div', 'grid-row pos' + (p.attivita === 'nuova' ? ' is-new' : ''));
+        const nm = el('div', 'nm'); const nl = tkLink(p.ticker, 'nmlink', ''); nl.textContent = ''; nl.append(el('b', null, p.societa)); if (p.nota) nl.append(el('small', null, p.nota)); nm.append(nl);
+        const wb = el('div', 'wb'); const fi = el('i'); fi.style.width = (p.peso_pct == null ? 0 : Math.max(2, (p.peso_pct / mx) * 100)) + '%'; wb.append(fi);
+        const ac = el('div', 'ac'); ac.append(pill(p));
+        r.append(tkLink(p.ticker), nm, wb, el('span', 'pc', pct(p.peso_pct)), ac, el('span', 'sh', p.azioni == null ? '—' : it0.format(p.azioni)), el('span', 'vl', usd(p.valore_usd)));
+        return r;
+      }));
+      const ex = document.getElementById('s-exits');
+      if (exits.length) ex.replaceChildren(el('b', null, 'Uscite nel trimestre (' + exits.length + '): '), document.createTextNode(exits.slice(0, 14).map((p) => p.ticker + ' (' + p.societa + ')').join(', ') + (exits.length > 14 ? ' e altre' : '')));
+      else ex.replaceChildren();
+    }
+
+    // Classifica completa
+    let rankKey = 'r26', rankDir = -1;
+    const drawRank = () => {
+      const k = rankKey;
+      const rows = rankRows.concat(benchRows).sort((a, b) => {
+        if (k === 'nome') return rankDir * a.nome.localeCompare(b.nome);
+        const av = a[k], bv = b[k];
+        if (av == null && bv == null) return (b.r26 ?? -999) - (a.r26 ?? -999);
+        if (av == null) return 1; if (bv == null) return -1;
+        return rankDir < 0 ? bv - av : av - bv;
+      });
+      document.querySelectorAll('#view-classifica th[data-k]').forEach((th) => th.classList.toggle('on', th.dataset.k === k));
+      let pos = 0;
+      document.getElementById('rank-body').replaceChildren(...rows.map((r) => {
+        const tr = el('tr', r.bench ? 'bench-row' : (r.id ? 'clickable' : ''));
+        const cell = (v, suf) => { const td = el('td', 'num'); const t = fmtR(v); if (t == null) td.append(el('span', 'nd', '—')); else { td.textContent = t + (suf || ''); td.classList.add(v >= 0 ? 'pos-v' : 'neg-v'); } return td; };
+        const nm = el('td'); nm.append(document.createTextNode(r.nome)); if (r.fondo !== r.nome) nm.append(el('div', 'nd', r.fondo));
+        tr.append(el('td', 'medal', r.bench ? 'Indice' : String(++pos)), nm, cell(r.r26), cell(r.rq), cell(r.r4), cell(r.rs, r.anni ? ' · ' + r.anni + ' a.' : ''), el('td', 'num', r.val ? usd(r.val) : '—'), el('td', 'num', r.nt == null ? '—' : it0.format(r.nt)));
+        if (r.id) { tr.tabIndex = 0; tr.onclick = () => window.__show(r.id); }
+        return tr;
+      }));
+    };
+    document.querySelectorAll('#view-classifica th[data-k]').forEach((th) => { th.onclick = () => { if (rankKey === th.dataset.k) rankDir *= -1; else { rankKey = th.dataset.k; rankDir = th.dataset.k === 'nome' ? 1 : -1; } drawRank(); }; });
+    drawRank();
+    document.getElementById('rank-kpis').replaceChildren(...BM.map((b) => { const x = el('div', 'kpi'); x.append(el('div', 'k', 'Fanno meglio dell\'' + (b.nome === 'S&P 500' ? 'S&P 500' : b.nome) + ' (' + fmtR(b.rendimento_anno) + ')'), el('div', 'v', beats(b) + ' su ' + withR.length)); return x; }));
+
+    // Scheda Idee
+    const who = (rows, withW) => [...new Map(rows.map((p) => [p.investitore_id, p])).values()].map((p) => nameOf(p.investitore_id) + (withW ? ' ' + it1.format(p.peso_pct) + '%' : '')).join(' · ');
+    const tdNum = (txt, cls) => el('td', 'num' + (cls ? ' ' + cls : ''), txt);
+    const tkTd = (t) => { const td = el('td'); td.append(tkLink(t)); return td; };
+    const varTd = (v) => { const td = el('td', 'num'); if (v == null) td.append(el('span', 'nd', '—')); else { td.textContent = sgn(v); td.classList.add(v >= 0 ? 'pos-v' : 'neg-v'); } return td; };
+    document.getElementById('forti-body').replaceChildren(...fortiList.map((g) => { const tr = el('tr'); tr.append(tkTd(g.tk), el('td', null, g.co), tdNum(String(g.n)), el('td', 'muted', who(g.rows, true)), varTd(g.v)); return tr; }));
+    document.getElementById('sconto-body').replaceChildren(...scontoList.map((g) => { const tr = el('tr'); const usd2 = (x) => (x == null ? '—' : it2.format(x) + ' $'); tr.append(tkTd(g.tk), el('td', null, g.co), tdNum(String(g.n)), el('td', 'muted', who(g.rows, false)), tdNum(usd2(g.ref.prezzo_dich)), tdNum(usd2(g.ref.prezzo_att)), varTd(g.v)); return tr; }));
+
+    // Scheda titolo
+    const allTk = new Map();
+    for (const p of D.posizioni) { const t = UNI[p.ticker] || p.ticker; if (!allTk.has(t)) allTk.set(t, UNI_NAME[t] || p.societa); }
+    document.getElementById('tk-list').replaceChildren(...[...allTk.entries()].sort().slice(0, 3000).map(([t, n]) => { const o = document.createElement('option'); o.value = t; o.label = n; return o; }));
+    const findTk = (q) => { q = String(q || '').trim(); if (!q) return null; const up = q.toUpperCase(); if (allTk.has(UNI[up] || up)) return UNI[up] || up; const low = q.toLowerCase(); for (const [t, n] of allTk) if (n.toLowerCase().includes(low)) return t; return null; };
+    const tkOut = document.getElementById('tk-out');
+    const table = (heads, rows, numCols) => { const w = el('div', 'tbl-wrap'); const tb = el('table'); const th = el('thead'); const hr = el('tr'); heads.forEach((h, j) => hr.append(el('th', numCols.includes(j) ? 'num' : null, h))); th.append(hr); tb.append(th); const bd = el('tbody'); rows.forEach((r) => bd.append(r)); tb.append(bd); w.append(tb); return w; };
+    const showTk = (q) => {
+      const t = findTk(q);
+      if (!t) { tkOut.replaceChildren(el('p', 'muted', 'Nessun gestore seguito possiede "' + q + '" nei dati attuali.')); return; }
+      const same = (x) => (UNI[x] || x) === t;
+      const hold = D.posizioni.filter((p) => same(p.ticker) && p.attivita !== 'uscita').sort((a, b) => (b.peso_pct ?? -1) - (a.peso_pct ?? -1));
+      const ops = D.operazioni.filter((o) => same(o.ticker)).sort((a, b) => qv(b.trimestre) - qv(a.trimestre));
+      const head = el('div', 'tk-head'); head.append(el('span', 'big', t), el('span', null, allTk.get(t)), tkLink(t, 'btn', 'Analizza su Yahoo Finanza ↗'));
+      const k = el('div', 'kpis'); const kp = (a, b) => { const x = el('div', 'kpi'); x.append(el('div', 'k', a), el('div', 'v', b)); k.append(x); };
+      const lb = new Set(), ls = new Set(); for (const o of ops) if (latest.get(o.investitore_id) === o.trimestre) (o.attivita === 'nuova' || o.attivita === 'aumento' ? lb : ls).add(o.investitore_id);
+      kp('Gestori che lo possiedono', new Set(hold.map((p) => p.investitore_id)).size + ' su ' + INV.size); kp('Comprano (ultimo 13F)', String(lb.size)); kp('Vendono (ultimo 13F)', String(ls.size));
+      const hr = hold.map((p) => { const tr = el('tr', 'clickable'); const ac = el('td'); ac.append(pill(p)); tr.append(el('td', null, nameOf(p.investitore_id) + ' · ' + (INV.get(p.investitore_id) || {}).fondo), el('td', 'num', pct(p.peso_pct)), ac, el('td', 'num', p.azioni == null ? '—' : it0.format(p.azioni)), el('td', 'num', usd(p.valore_usd)), el('td', null, p.trimestre)); tr.onclick = () => window.__show(p.investitore_id); return tr; });
+      const parts = [head, k, el('div', 'sub2', 'Chi lo possiede'), table(['Gestore', 'Peso', 'Attività', 'Azioni', 'Valore', '13F'], hr, [1, 3, 4])];
+      if (ops.length) parts.push(el('div', 'sub2', 'Storico delle operazioni'), table(['Trimestre', 'Gestore', 'Operazione', 'Dettaglio'], ops.slice(0, 200).map((o) => { const tr = el('tr'); const ac = el('td'); ac.append(pill(o)); tr.append(el('td', null, o.trimestre), el('td', null, nameOf(o.investitore_id)), ac, el('td', 'muted', o.nota || '')); return tr; }), []));
+      tkOut.replaceChildren(...parts);
+    };
+    const tkQ = document.getElementById('tk-q');
+    document.getElementById('tk-go').onclick = () => showTk(tkQ.value);
+    tkQ.onkeydown = (e) => { if (e.key === 'Enter') showTk(tkQ.value); };
+    tkQ.onchange = () => showTk(tkQ.value);
+
+    // Elenco completo e comunicazioni recenti
+    if (RT.length) {
+      document.getElementById('rt-box').hidden = false;
+      document.getElementById('rt-body').replaceChildren(...RT.slice(0, 40).map((r) => { const tr = el('tr'); const d = el('td', r.attivita === 'Buy' ? 'up' : 'down', r.descrizione || ''); if (r.fonte) { const a = el('a', null, ' · documento SEC'); a.href = r.fonte; a.target = '_blank'; a.rel = 'noopener'; d.append(a); } tr.append(el('td', null, date(r.data)), el('td', null, r.gestore), el('td', null, r.societa), el('td', null, r.tipo), d); return tr; }));
+    }
+    document.getElementById('recent').replaceChildren(...recent.map((d) => { const c = el('div', 'rcard'); c.append(el('div', 'd', date(d.aggiornato) + ' · 13F ' + d.trimestre), el('div', 'n', d.investitore), el('div', 'f', d.fondo === d.investitore ? ' ' : d.fondo)); if (d.dettaglio) { c.tabIndex = 0; c.onclick = () => window.__show(d.dettaglio); } return c; }));
+    const body = document.getElementById('list-body'), q = document.getElementById('q');
+    let filtro = 'tutti';
+    const rows = DR.slice().sort((a, b) => b.aggiornato.localeCompare(a.aggiornato) || a.investitore.localeCompare(b.investitore));
+    const drawList = () => {
+      const s = q.value.trim().toLowerCase();
+      const vis = rows.filter((d) => (!s || (d.investitore + ' ' + d.fondo).toLowerCase().includes(s)) && (filtro === 'tutti' || (filtro === 'q3' && d.trimestre === LQ)));
+      document.getElementById('list-count').textContent = vis.length + ' di ' + rows.length;
+      body.replaceChildren(...vis.map((d) => {
+        const i = d.dettaglio ? INV.get(d.dettaglio) : null; const p = perfOf(d);
+        const tr = el('tr', i ? 'clickable' : ''); const nm = el('td'); nm.append(el('div', null, d.investitore)); if (d.nota) nm.append(el('div', 'nd', d.nota));
+        const y = ytdOf(p); const r26 = el('td', 'num'); const t26 = fmtR(y); if (t26) { r26.textContent = t26; r26.classList.add(y >= 0 ? 'pos-v' : 'neg-v'); } else r26.append(el('span', 'nd', '—'));
+        const src = el('td'); const a = el('a', null, d.codice ? 'Dataroma' : 'Fonte'); a.href = d.url; a.target = '_blank'; a.rel = 'noopener'; a.onclick = (e) => e.stopPropagation(); src.append(a);
+        tr.append(nm, el('td', 'muted', d.fondo === d.investitore ? '—' : d.fondo), el('td', null, d.trimestre || '—'), el('td', null, date(d.aggiornato)), el('td', 'num', i ? usd(i.valore_usd) : '—'), el('td', 'num', i && i.n_titoli != null ? it0.format(i.n_titoli) : '—'), r26, src);
+        if (i) { tr.tabIndex = 0; tr.onclick = () => window.__show(d.dettaglio); }
+        return tr;
+      }));
+    };
+    q.oninput = drawList;
+    document.querySelectorAll('.seg button').forEach((b) => { b.onclick = () => { filtro = b.dataset.f; document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); drawList(); }; });
+    drawList();
+
+    // Viste
+    const VIEWS = ['schermo', 'classifica', 'idee', 'titoli', 'elenco'];
+    const route = () => {
+      const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'schermo';
+      VIEWS.forEach((n) => { document.getElementById('view-' + n).hidden = n !== v; document.getElementById('tab-' + n).setAttribute('aria-current', n === v ? 'page' : 'false'); });
+      document.body.classList.toggle('list-view', v !== 'schermo');
+      if (v === 'titoli' && window.__tk) { tkQ.value = window.__tk; showTk(window.__tk); window.__tk = null; }
+      if (v === 'schermo') { drawRight(); render(order[idx]); sel.value = order[idx]; startTimer(); } else { clearTimeout(timer); cancelAnimationFrame(raf); window.scrollTo(0, 0); }
+    };
+    window.addEventListener('hashchange', route);
+    let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (!document.getElementById('view-schermo').hidden) { drawRight(); render(order[idx]); startTimer(); } }, 250); });
+    route();
+
+    // Ogni mezz'ora controlla se ci sono dati più recenti e in quel caso ricarica la pagina
+    setInterval(() => { getJSON(SRC, 60000).then((n) => { if (n && n.investitori && vkey(n) > vkey(D)) location.reload(); }).catch(() => {}); }, REFRESH_MS);
+    // Sul monitor acceso giorno e notte: ricarica completa una volta al giorno per liberare memoria
+    setTimeout(() => location.reload(), 24 * 3600 * 1000);
+  }
+})();
+</script>
+</body>
+</html>
