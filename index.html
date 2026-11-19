@@ -45,7 +45,7 @@
   /* Testata */
   .top { display: flex; align-items: center; gap: 10px 18px; padding: 10px 22px; background: var(--ink-1); border-bottom: 1px solid var(--line); flex-wrap: wrap; flex: none; }
   /* Firma del consulente, come nello schermo Indici di borsa: logo, nome in Baskerville, ruolo in maiuscoletto oro */
-  .sig { flex: none; display: flex; align-items: center; gap: 14px; padding-right: 20px; border-right: 1px solid #4b5479; }
+  .sig { flex: none; display: flex; align-items: center; gap: 14px; padding-right: 30px; margin-right: 14px; border-right: 1px solid #4b5479; }
   .sig-logo { display: block; height: calc(var(--fs-xl) * 1.4); width: auto; max-width: 190px; object-fit: contain; }
   .sig-logo + .sig-text { padding-left: 14px; border-left: 1px solid #4b5479; }
   .sig-text { display: grid; gap: 7px; }
@@ -53,12 +53,12 @@
   .sig-role { display: flex; align-items: center; gap: 8px; font: 500 var(--fs-xs)/1 var(--font-label); letter-spacing: .3em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
   .sig-role::before { content: ""; width: 18px; height: 1px; background: var(--accent); }
   @media (max-width: 1699px) { .sig-logo { display: none; } .sig-logo + .sig-text { padding-left: 0; border-left: 0; } }
-  @media (max-width: 1099px), (orientation: portrait) { .sig { border-right: 0; padding-right: 0; } .brand h1 { white-space: normal; } }
+  @media (max-width: 1099px), (orientation: portrait) { .sig { border-right: 0; padding-right: 0; margin-right: 0; } .brand h1 { white-space: normal; } }
   .brand { margin-right: auto; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 12px; }
   .brand-txt { min-width: 0; }
   .brand h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-xl); line-height: 1.1; white-space: nowrap; }
   .brand h1 span { color: var(--accent); }
-  .brand p { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand p { margin: 6px 0 0; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   @media (max-width: 1099px), (orientation: portrait) { .brand p { white-space: normal; } }
   @media (max-width: 1449px) { .clock { display: none; } }
   .brand p b { color: var(--text); font-family: var(--font-mono); font-weight: 600; }
