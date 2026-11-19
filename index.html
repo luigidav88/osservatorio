@@ -71,6 +71,7 @@
   .brand p { margin: 6px 0 0; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   @media (max-width: 1099px), (orientation: portrait) { .brand p { white-space: normal; } }
   @media (max-width: 1449px) { .clock { display: none; } }
+  @media (min-width: 1100px) and (max-width: 1449px) and (orientation: landscape) { .grid-row { grid-template-columns: max(70px, calc(var(--fs-md) * 5.4)) minmax(0, 1fr) minmax(50px, 110px) 64px 150px 92px; } }
   .brand p b { color: var(--text); font-family: var(--font-mono); font-weight: 600; }
   .tabs { display: flex; gap: 3px; background: var(--ink-0); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
   .tabs a { text-decoration: none; color: var(--muted); padding: 6px 12px; border-radius: 999px; font-size: var(--fs-sm); white-space: nowrap; }
@@ -142,7 +143,7 @@
   .pos-title h2 { font-size: var(--fs-md); font-weight: 600; }
   .pos-title h2 span { color: var(--muted); font-weight: 400; font-size: var(--fs-sm); }
   .legend { display: flex; gap: 6px; flex-wrap: wrap; }
-  .grid-row { display: grid; grid-template-columns: 82px minmax(0, 1fr) minmax(70px, 150px) 74px 170px 108px; align-items: center; gap: 10px; }
+  .grid-row { display: grid; grid-template-columns: max(82px, calc(var(--fs-md) * 5.8)) minmax(0, 1fr) minmax(70px, 150px) 74px 170px 108px; align-items: center; gap: 10px; }
   .pos-head { font-family: var(--font-label); font-weight: 600; font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: .1em; padding: 6px 8px; border-bottom: 1px solid var(--line); flex: none; }
   .pos-head .r { text-align: right; }
   .pos-list { display: flex; flex-direction: column; }
@@ -179,7 +180,7 @@
   .rrow .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rrow .who small { color: var(--muted); }
   .rrow .v { font-family: var(--font-mono); font-weight: 600; text-align: right; }
-  .crow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: var(--fs-sm); padding: 3px 0; }
+  .crow { display: grid; grid-template-columns: max(64px, calc(var(--fs-sm) * 4.6)) minmax(0, 1fr) max(46px, calc(var(--fs-sm) * 3)); gap: 8px; align-items: center; font-size: var(--fs-sm); padding: 3px 0; }
   .crow a.tk { font-family: var(--font-mono); font-weight: 600; color: var(--text); text-decoration: none; }
   .crow a.tk:hover { color: var(--accent); text-decoration: underline; }
   .cbar { position: relative; height: 22px; background: var(--ink-2); border-radius: 5px; overflow: hidden; }
@@ -223,7 +224,7 @@
     .right #p-act { flex-grow: 1.15; }
   }
   @media (min-width: 1700px) and (orientation: landscape) {
-    .grid-row { grid-template-columns: 96px minmax(0, 1fr) minmax(90px, 200px) 92px 200px 140px 128px; }
+    .grid-row { grid-template-columns: max(96px, calc(var(--fs-md) * 5.8)) minmax(0, 1fr) minmax(90px, 200px) max(92px, calc(var(--fs-md) * 5.5)) max(200px, calc(var(--fs-md) * 12)) max(140px, calc(var(--fs-md) * 8.4)) max(128px, calc(var(--fs-md) * 7.6)); }
     .pos .sh, .pos-head .c-sh { display: block; }
     .pos .sh { font-family: var(--font-mono); text-align: right; color: var(--muted); white-space: nowrap; font-size: var(--fs-sm); }
   }
