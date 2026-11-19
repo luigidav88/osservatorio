@@ -42,10 +42,7 @@
   /* Testata */
   .top { display: flex; align-items: center; gap: 10px 18px; padding: 10px 22px; background: var(--ink-1); border-bottom: 1px solid var(--line); flex-wrap: wrap; flex: none; }
   .brand { margin-right: auto; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 12px; }
-  .brand .mono { width: calc(var(--fs-xl) * 1.75); height: calc(var(--fs-xl) * 1.75); flex: none; }
   .brand-txt { min-width: 0; }
-  .brand .me { color: var(--accent); font-weight: 500; }
-  .brand .sep { color: var(--muted); }
   .brand h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-xl); line-height: 1.1; white-space: nowrap; }
   .brand h1 span { color: var(--accent); }
   .brand p { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -266,14 +263,9 @@
 <body>
   <header class="top">
     <div class="brand">
-      <svg class="mono" viewBox="0 0 64 64" role="img" aria-label="Logo Luigi D'Aversa">
-        <circle cx="32" cy="32" r="30" fill="#111d30" stroke="#e3b356" stroke-width="2.5"/>
-        <circle cx="32" cy="32" r="24.5" fill="none" stroke="#e3b356" stroke-width="0.8" opacity=".55"/>
-        <text x="32" y="41" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-weight="600" font-size="25" fill="#e3b356" letter-spacing="-0.5">LD</text>
-      </svg>
       <div class="brand-txt">
         <h1>Osservatorio <span>Grandi Investitori</span></h1>
-        <p><span class="me">Luigi D'Aversa · Consulente finanziario</span><span class="sep"> · </span><span id="sub">Portafogli dichiarati alla SEC (modulo 13F)</span></p>
+        <p><span id="sub">Portafogli dichiarati alla SEC (modulo 13F)</span></p>
       </div>
     </div>
     <nav class="tabs" aria-label="Viste">
