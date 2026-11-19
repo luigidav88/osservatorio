@@ -44,15 +44,25 @@
 
   /* Testata */
   .top { display: flex; align-items: center; gap: 10px 18px; padding: 10px 22px; background: var(--ink-1); border-bottom: 1px solid var(--line); flex-wrap: wrap; flex: none; }
-  /* Firma del consulente, come nello schermo Indici di borsa: logo, nome in Baskerville, ruolo in maiuscoletto oro */
-  .sig { flex: none; display: flex; align-items: center; gap: 14px; padding-right: 30px; margin-right: 14px; border-right: 1px solid #4b5479; }
-  .sig-logo { display: block; height: calc(var(--fs-xl) * 1.4); width: auto; max-width: 190px; object-fit: contain; }
-  .sig-logo + .sig-text { padding-left: 14px; border-left: 1px solid #4b5479; }
-  .sig-text { display: grid; gap: 7px; }
-  .sig-name { font: 600 calc(var(--fs-xl) * .88)/1 var(--font-display); letter-spacing: .005em; white-space: nowrap; }
-  .sig-role { display: flex; align-items: center; gap: 8px; font: 500 var(--fs-xs)/1 var(--font-label); letter-spacing: .3em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
-  .sig-role::before { content: ""; width: 18px; height: 1px; background: var(--accent); }
-  @media (max-width: 1699px) { .sig-logo { display: none; } .sig-logo + .sig-text { padding-left: 0; border-left: 0; } }
+  /* Firma del consulente: stesse misure dello schermo Indici di borsa (25 px il nome, 11 px il ruolo, logo alto 40 px,
+     +10% sui monitor da 1700x900 in su e in proporzione sugli schermi oltre 2200 px, come fa Indici di borsa) */
+  :root { --z: 1; --sk: 1; }
+  @media (min-width: 1700px) and (min-height: 900px) { :root { --sk: 1.1; } }
+  .sig { flex: none; display: flex; align-items: center; gap: calc(14px * var(--z)); padding-right: 30px; margin-right: 14px; border-right: 1px solid #4b5479; }
+  .sig-logo { display: block; height: calc(40px * var(--z)); width: auto; max-width: calc(190px * var(--z)); object-fit: contain; }
+  .sig-logo + .sig-text { padding-left: calc(14px * var(--z)); border-left: 1px solid #4b5479; }
+  .sig-text { display: grid; gap: calc(7px * var(--z)); }
+  .sig-name { font: 600 calc(25px * var(--sk))/1 var(--font-display); letter-spacing: .005em; white-space: nowrap; }
+  .sig-role { display: flex; align-items: center; gap: calc(8px * var(--z)); font: 500 calc(11px * var(--sk))/1 var(--font-label); letter-spacing: .3em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+  .sig-role::before { content: ""; width: calc(18px * var(--z)); height: 1px; background: var(--accent); }
+  @media (max-width: 1500px) {
+    .sig { gap: 10px; }
+    .sig-name { font-size: calc(20px * var(--sk)); }
+    .sig-role { font-size: calc(10px * var(--sk)); letter-spacing: .2em; }
+    .sig-role::before { width: 12px; }
+    .sig-logo { height: 38px; max-width: 160px; }
+  }
+  @media (max-width: 1700px) { .sig-logo { display: none; } .sig-logo + .sig-text { padding-left: 0; border-left: 0; } }
   @media (max-width: 1099px), (orientation: portrait) { .sig { border-right: 0; padding-right: 0; margin-right: 0; } .brand h1 { white-space: normal; } }
   .brand { margin-right: auto; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 12px; }
   .brand-txt { min-width: 0; }
@@ -450,6 +460,15 @@
       if (fit && box.scrollHeight > box.clientHeight + 1) { n.remove(); break; }
     }
   };
+
+  // Firma: sugli schermi oltre 2200 px si ingrandisce in proporzione a un Full HD, come Indici di borsa
+  const sigScale = () => {
+    const W = window.innerWidth, H = window.innerHeight;
+    const want = W > 2200 ? W / 1920 : 1, limit = Math.max(1, Math.min(H / 880, W / 1280));
+    const z = Math.max(1, Math.round(Math.min(want, limit) * 100) / 100), k = (W >= 1700 && H >= 900) ? 1.1 : 1;
+    document.documentElement.style.setProperty('--z', String(z)); document.documentElement.style.setProperty('--sk', String(Math.round(k * z * 1000) / 1000));
+  };
+  sigScale(); window.addEventListener('resize', sigScale);
 
   // Orologio
   const clock = document.getElementById('clock');
