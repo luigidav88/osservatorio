@@ -341,7 +341,7 @@
           <tbody id="rank-body"></tbody>
         </table>
       </div>
-      <p class="list-foot">Calcolo sulle posizioni di Dataroma (moduli 13F della SEC) e sui prezzi di chiusura di Yahoo Finanza, aggiornati ogni mattina. Il rendimento del portafoglio 13F non coincide con quello del fondo: esclude posizioni short, titoli esteri, obbligazioni, liquidità, commissioni e le operazioni fatte dentro il trimestre. Non è una raccomandazione di investimento.</p>
+      <p class="list-foot">Calcolo sulle posizioni dei moduli 13F depositati alla SEC e sui prezzi di chiusura di Yahoo Finanza, aggiornati ogni mattina. Il rendimento del portafoglio 13F non coincide con quello del fondo: esclude posizioni short, titoli esteri, obbligazioni, liquidità, commissioni e le operazioni fatte dentro il trimestre. Non è una raccomandazione di investimento.</p>
     </section>
 
     <section class="list" id="view-idee" hidden>
@@ -367,10 +367,10 @@
     <section class="list" id="view-elenco" hidden>
       <div class="rt" id="rt-box" hidden>
         <h2>Comunicazioni recenti alla SEC</h2>
-        <p class="intro">Acquisti e vendite comunicati dai gestori pochi giorni dopo l'operazione (Form 4, 13D, 13G), molto prima del 13F. Fonte: Dataroma RealTime.</p>
+        <p class="intro">Acquisti e vendite comunicati dai gestori pochi giorni dopo l'operazione (Form 4, 13D, 13G), molto prima del 13F. Fonte: SEC (EDGAR).</p>
         <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Gestore</th><th>Società</th><th>Tipo</th><th>Dettaglio</th></tr></thead><tbody id="rt-body"></tbody></table></div>
       </div>
-      <h2>Tutti i superinvestitori di Dataroma</h2>
+      <h2>Tutti i grandi investitori seguiti</h2>
       <div class="recent" id="recent" aria-label="Ultimi 13F depositati"></div>
       <div class="list-tools">
         <input id="q" type="search" placeholder="Cerca investitore o fondo" aria-label="Cerca investitore o fondo">
@@ -450,9 +450,10 @@
   const REMOTE = 'https://raw.githubusercontent.com/luigidav88/osservatorio/main/data/dati.json';
   const SRC = window.__DATI ? REMOTE : 'data/dati.json';
   const vkey = (d) => (d && d.aggiornato ? d.aggiornato + '|' + (d.prezzi_al || '') : '');
+  // 'no-cache': il browser chiede al server se il file è cambiato e lo riscarica solo in quel caso
   const getJSON = (u, ms) => {
     const c = window.AbortController ? new AbortController() : null; const t = c ? setTimeout(() => c.abort(), ms || 30000) : 0;
-    return fetch(u + '?t=' + Date.now(), { cache: 'no-store', signal: c ? c.signal : undefined }).then((r) => { clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json(); });
+    return fetch(u, { cache: 'no-cache', signal: c ? c.signal : undefined }).then((r) => { clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json(); });
   };
   let offline = false;
   const load = window.__DATI
@@ -461,6 +462,7 @@
   load.then(init).catch(() => { document.querySelector('main').replaceChildren(el('div', 'err', 'Non riesco a caricare i dati. Ricarica la pagina.')); });
 
   function init(D) {
+    if (D.nomi) for (const o of D.operazioni) if (!o.societa) o.societa = D.nomi[o.ticker] || o.ticker;
     const INV = new Map(D.investitori.map((i) => [i.id, i]));
     const DR = D.dataroma.concat(D.extra || []);
     const drById = new Map(DR.filter((d) => d.dettaglio).map((d) => [d.dettaglio, d]));
@@ -594,7 +596,7 @@
     const RTn = (D.tempo_reale || []).filter((r) => daysAgo(r.data) <= 7 && daysAgo(r.data) >= 0);
     for (const r of RTn) {
       const id = (DR.find((d) => d.investitore === r.gestore) || {}).dettaglio;
-      news.push({ d: r.data, k: 1, id, make: () => { const f = document.createDocumentFragment(); f.append(el('b', null, r.gestore), document.createTextNode(' · ' + r.tipo + ' · ' + r.societa + ': '), el('span', r.attivita === 'Buy' ? 'up' : 'down', r.descrizione)); return f; } });
+      news.push({ d: r.data, k: 1, id, make: () => { const f = document.createDocumentFragment(); f.append(el('b', null, r.gestore), document.createTextNode(' · ' + r.tipo + ' · ' + r.societa + ': '), el('span', (r.attivita === 'Buy' ? 'up' : r.attivita === 'Sell' ? 'down' : 'muted'), r.descrizione)); return f; } });
     }
     news.sort((a, b) => b.d.localeCompare(a.d) || a.k - b.k);
     const alertBox = document.getElementById('alert'), alertMsg = document.getElementById('alert-msg'), alertCnt = document.getElementById('alert-cnt');
@@ -619,7 +621,7 @@
     const items = [];
     const RT = (D.tempo_reale || []).slice().sort((a, b) => String(b.data).localeCompare(String(a.data)));
     const rtSeen = new Set();
-    for (const r of RT.filter((x) => { const k = x.gestore + '|' + x.societa + '|' + x.attivita; if (rtSeen.has(k)) return false; rtSeen.add(k); return true; }).slice(0, 10)) { const s = el('span', 'ti'); s.append(el('span', 'rtl', 'ULTIME ORE · ' + r.tipo), el('span', null, r.gestore), el('span', 'tk', r.societa), el('span', r.attivita === 'Buy' ? 'up' : 'down', r.descrizione)); items.push(s); }
+    for (const r of RT.filter((x) => { const k = x.gestore + '|' + x.societa + '|' + x.attivita; if (rtSeen.has(k)) return false; rtSeen.add(k); return true; }).slice(0, 10)) { const s = el('span', 'ti'); s.append(el('span', 'rtl', 'ULTIME ORE · ' + r.tipo), el('span', null, r.gestore), el('span', 'tk', r.societa), el('span', (r.attivita === 'Buy' ? 'up' : r.attivita === 'Sell' ? 'down' : 'muted'), r.descrizione)); items.push(s); }
     for (const id of order.slice(0, 35)) {
       const i = INV.get(id); const ops = (opsBy.get(id) || []).filter((o) => o.trimestre === i.trimestre).sort((a, b) => strength(b) - strength(a)).slice(0, 2);
       for (const o of ops) { const k = KIND[o.attivita]; const s = el('span', 'ti'); const isNew = o.attivita === 'nuova'; s.append(el('span', 'who', i.investitore), el('span', 'tk' + (isNew ? ' nw' : ''), (isNew ? '★ ' : '') + o.ticker), el('span', isNew ? 'nw' : k, isNew ? 'Nuova posizione' : (k === 'up' ? '▲ ' : '▼ ') + (o.attivita === 'uscita' ? 'Uscita' : o.variazione_pct != null ? sgn(o.variazione_pct) : LAB[o.attivita]))); items.push(s); }
@@ -691,7 +693,7 @@
       const sb = el('div', 'stat spark-box'); const sp = el('div', 'spark'); sb.append(el('div', 'k', 'Valore nel tempo'), sp); stats.push(sb);
       document.getElementById('s-stats').replaceChildren(...stats); spark(sp, id);
       let note = i.nota || '';
-      if (dr && qv(dr.trimestre) > qv(i.trimestre)) note = 'Su Dataroma è già disponibile il ' + dr.trimestre + ': arriverà con il prossimo aggiornamento. ' + note;
+      if (dr && qv(dr.trimestre) > qv(i.trimestre)) note = 'Alla SEC è già disponibile il ' + dr.trimestre + ': arriverà con il prossimo aggiornamento. ' + note;
       document.getElementById('s-note').textContent = note.trim();
 
       const all = posBy.get(id) || [];
@@ -786,7 +788,7 @@
     // Elenco completo e comunicazioni recenti
     if (RT.length) {
       document.getElementById('rt-box').hidden = false;
-      document.getElementById('rt-body').replaceChildren(...RT.slice(0, 40).map((r) => { const tr = el('tr'); const d = el('td', r.attivita === 'Buy' ? 'up' : 'down', r.descrizione || ''); if (r.fonte) { const a = el('a', null, ' · documento SEC'); a.href = r.fonte; a.target = '_blank'; a.rel = 'noopener'; d.append(a); } tr.append(el('td', null, date(r.data)), el('td', null, r.gestore), el('td', null, r.societa), el('td', null, r.tipo), d); return tr; }));
+      document.getElementById('rt-body').replaceChildren(...RT.slice(0, 40).map((r) => { const tr = el('tr'); const d = el('td', (r.attivita === 'Buy' ? 'up' : r.attivita === 'Sell' ? 'down' : 'muted'), r.descrizione || ''); if (r.fonte) { const a = el('a', null, ' · documento SEC'); a.href = r.fonte; a.target = '_blank'; a.rel = 'noopener'; d.append(a); } tr.append(el('td', null, date(r.data)), el('td', null, r.gestore), el('td', null, r.societa), el('td', null, r.tipo), d); return tr; }));
     }
     document.getElementById('recent').replaceChildren(...recent.map((d) => { const c = el('div', 'rcard'); c.append(el('div', 'd', date(d.aggiornato) + ' · 13F ' + d.trimestre), el('div', 'n', d.investitore), el('div', 'f', d.fondo === d.investitore ? ' ' : d.fondo)); if (d.dettaglio) { c.tabIndex = 0; c.onclick = () => window.__show(d.dettaglio); } return c; }));
     const body = document.getElementById('list-body'), q = document.getElementById('q');
@@ -800,7 +802,7 @@
         const i = d.dettaglio ? INV.get(d.dettaglio) : null; const p = perfOf(d);
         const tr = el('tr', i ? 'clickable' : ''); const nm = el('td'); nm.append(el('div', null, d.investitore)); if (d.nota) nm.append(el('div', 'nd', d.nota));
         const y = ytdOf(p); const r26 = el('td', 'num'); const t26 = fmtR(y); if (t26) { r26.textContent = t26; r26.classList.add(y >= 0 ? 'pos-v' : 'neg-v'); } else r26.append(el('span', 'nd', '—'));
-        const src = el('td'); const a = el('a', null, d.codice ? 'Dataroma' : 'Fonte'); a.href = d.url; a.target = '_blank'; a.rel = 'noopener'; a.onclick = (e) => e.stopPropagation(); src.append(a);
+        const src = el('td'); const a = el('a', null, 'SEC'); a.href = d.url; a.target = '_blank'; a.rel = 'noopener'; a.onclick = (e) => e.stopPropagation(); src.append(a);
         tr.append(nm, el('td', 'muted', d.fondo === d.investitore ? '—' : d.fondo), el('td', null, d.trimestre || '—'), el('td', null, date(d.aggiornato)), el('td', 'num', i ? usd(i.valore_usd) : '—'), el('td', 'num', i && i.n_titoli != null ? it0.format(i.n_titoli) : '—'), r26, src);
         if (i) { tr.tabIndex = 0; tr.onclick = () => window.__show(d.dettaglio); }
         return tr;
