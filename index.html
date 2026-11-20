@@ -64,7 +64,7 @@
   }
   @media (max-width: 1700px) { .sig-logo { display: none; } .sig-logo + .sig-text { padding-left: 0; border-left: 0; } }
   @media (max-width: 1099px), (orientation: portrait) { .sig { border-right: 0; padding-right: 0; margin-right: 0; } .brand h1 { white-space: normal; } }
-  .brand { margin-right: auto; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 12px; }
+  .brand { margin-right: auto; min-width: 0; flex: 1 1 0; display: flex; align-items: center; gap: 12px; }
   .brand-txt { min-width: 0; }
   .brand h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-xl); line-height: 1.1; white-space: nowrap; }
   .brand h1 span { color: var(--accent); }
@@ -489,7 +489,8 @@
   // Il file per il monitor contiene una copia dei dati e scarica quelli nuovi da GitHub; la pagina pubblicata li legge accanto a sé
   const REMOTE = 'https://raw.githubusercontent.com/luigidav88/osservatorio/main/data/dati.json';
   const SRC = window.__DATI ? REMOTE : 'data/dati.json';
-  const vkey = (d) => (d && d.aggiornato ? d.aggiornato + '|' + (d.prezzi_al || '') : '');
+  // versione dei dati: l'ora esatta dell'aggiornamento (o la sola data per i dati più vecchi)
+  const vkey = (d) => (d && d.aggiornato ? (d.aggiornato_ora || d.aggiornato + 'T00:00:00Z') + '|' + (d.prezzi_al || '') : '');
   // 'no-cache': il browser chiede al server se il file è cambiato e lo riscarica solo in quel caso
   const getJSON = (u, ms) => {
     const c = window.AbortController ? new AbortController() : null; const t = c ? setTimeout(() => c.abort(), ms || 30000) : 0;
@@ -529,7 +530,17 @@
     intro.append(el('b', null, 'Storico annuo'), document.createTextNode(": rendimento medio annuo copiando il 13F, sugli anni indicati (fonte Arkolith). Tocca l'intestazione di una colonna per ordinare, una riga per vedere il portafoglio."));
 
     const nQ3 = D.dataroma.filter((d) => d.trimestre === LQ).length;
-    document.getElementById('sub').replaceChildren(el('b', null, String(D.dataroma.length)), document.createTextNode(' grandi gestori, '), el('b', null, String(nQ3)), document.createTextNode(' con il ' + LQ + ' · prezzi al ' + date(D.prezzi_al || D.aggiornato) + (offline ? ' · senza connessione: ultimi dati salvati' : ' · aggiornato ogni mattina')));
+    const dshort = (iso) => { const d = new Date(iso + 'T12:00:00Z'); return isNaN(d) ? iso : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', timeZone: 'Europe/Rome' }); };
+    const aggTxt = () => {
+      if (!D.aggiornato_ora) return 'aggiornato il ' + dshort(D.aggiornato);
+      const t = new Date(D.aggiornato_ora); const opt = { timeZone: 'Europe/Rome' };
+      const giorno = t.toLocaleDateString('it-IT', { ...opt, year: 'numeric', month: '2-digit', day: '2-digit' });
+      const oggi = new Date().toLocaleDateString('it-IT', { ...opt, year: 'numeric', month: '2-digit', day: '2-digit' });
+      const ora = t.toLocaleTimeString('it-IT', { ...opt, hour: '2-digit', minute: '2-digit' });
+      return 'aggiornato ' + (giorno === oggi ? 'oggi' : 'il ' + t.toLocaleDateString('it-IT', { ...opt, day: 'numeric', month: 'short' })) + ' alle ' + ora;
+    };
+    const drawSub = () => document.getElementById('sub').replaceChildren(el('b', null, String(D.dataroma.length)), document.createTextNode(' grandi gestori, '), el('b', null, String(nQ3)), document.createTextNode(' con il ' + LQ + ' · ' + aggTxt() + ' · chiusure di Wall Street del ' + dshort(D.prezzi_al || D.aggiornato) + (offline ? ' · senza connessione: ultimi dati salvati' : '')));
+    drawSub(); setInterval(drawSub, 60000);   // 'oggi' diventa la data giusta anche dopo la mezzanotte
 
     // Consenso e attività
     const cons = new Map();
